@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>最简加法计算器</title>
+  <style>
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      background: #0b0f19;
+      color:#e8eefc;
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial,"Noto Sans","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+      padding: 12px;
+    }
+    .wrap{ max-width: 520px; margin: 0 auto; }
+    .card{
+      border-radius: 16px;
+      border:1px solid rgba(255,255,255,.12);
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      box-shadow: 0 10px 26px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+    header{
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:baseline;
+    }
+    h1{ margin:0; font-size:14px; font-weight:800; }
+    .sub{ font-size:12px; color: rgba(232,238,252,.70); text-align:right; line-height:1.35; }
+    .content{ padding: 12px 14px 14px; display:grid; gap:10px; }
+
+    .row{ display:grid; grid-template-columns: 1fr auto 1fr; gap:8px; align-items:center; }
+    .op{ font-size:18px; font-weight:900; opacity:.9; padding:0 4px; }
+
+    input{
+      width:100%;
+      padding: 12px 12px;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.18);
+      color:#e8eefc;
+      font-size: 16px;
+      outline:none;
+    }
+    input:focus{
+      border-color: rgba(110,168,255,.55);
+      box-shadow: 0 0 0 3px rgba(110,168,255,.18);
+    }
+
+    .actions{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    button{
+      padding: 12px 12px;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(18,26,43,.55);
+      color:#e8eefc;
+      font-weight:900;
+      cursor:pointer;
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button.primary{
+      border-color: rgba(110,168,255,.42);
+      background: linear-gradient(180deg, rgba(110,168,255,.32), rgba(110,168,255,.12));
+    }
+    button:active{ transform: translateY(1px); }
+
+    .err{ color:#ff9a9a; font-size:12px; min-height: 16px; }
+    .result{
+      padding: 10px 12px;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:center;
+    }
+    .label{ font-size:12px; color: rgba(232,238,252,.70); }
+    .value{ font-size:18px; font-weight:900; }
+
+    @media (max-width: 420px){
+      .row{ grid-template-columns: 1fr; }
+      .op{ display:none; }
+      .actions{ grid-template-columns: 1fr; }
+      .result{ flex-direction: column; align-items:flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" role="application" aria-label="最简加法计算器">
+      <header>
+        <h1>最简加法计算器</h1>
+        <div class="sub">Enter 计算 / Esc 清空<br>适配小窗口</div>
+      </header>
+
+      <div class="content">
+        <div class="row">
+          <input id="a" inputmode="decimal" placeholder="A（例如 1.23）" aria-label="第一个数" />
+          <div class="op" aria-hidden="true">+</div>
+          <input id="b" inputmode="decimal" placeholder="B（例如 4.56）" aria-label="第二个数" />
+        </div>
+
+        <div class="actions">
+          <button class="primary" id="calc" type="button">计算 A + B</button>
+          <button id="clear" type="button">清空</button>
+        </div>
+
+        <div class="err" id="err" aria-live="polite"></div>
+
+        <div class="result" aria-live="polite">
+          <div>
+            <div class="label">结果</div>
+            <div class="value" id="out">—</div>
+          </div>
+          <div class="label">支持小数、负数、逗号分隔</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const $a = document.getElementById('a');
+  const $b = document.getElementById('b');
+  const $out = document.getElementById('out');
+  const $err = document.getElementById('err');
+
+  function parseNum(s){
+    const t = String(s ?? '').trim().replace(/,/g,'');
+    if (t === '') return {ok:false, val:null};
+    const n = Number(t);
+    if (!Number.isFinite(n)) return {ok:false, val:null};
+    return {ok:true, val:n};
+  }
+  function showError(msg){ $err.textContent = msg || ''; }
+
+  function compute(){
+    showError('');
+    const pa = parseNum($a.value);
+    const pb = parseNum($b.value);
+    if (!pa.ok || !pb.ok){
+      $out.textContent = '—';
+      showError('请输入两个有效数字。');
+      return;
+    }
+    const sum = pa.val + pb.val;
+    const pretty = (Math.abs(sum) < 1e15) ? String(+sum.toPrecision(15)) : String(sum);
+    $out.textContent = pretty;
+  }
+
+  function clearAll(){
+    $a.value = '';
+    $b.value = '';
+    $out.textContent = '—';
+    showError('');
+    $a.focus();
+  }
+
+  document.getElementById('calc').addEventListener('click', compute);
+  document.getElementById('clear').addEventListener('click', clearAll);
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') compute();
+    if (e.key === 'Escape') clearAll();
+  });
+
+  $a.focus();
+})();
+</script>
+</body>
+</html>

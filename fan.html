@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>迷你电风扇</title>
+  <style>
+    :root{
+      --bg:#0b0f19;
+      --panel: rgba(255,255,255,.06);
+      --border: rgba(255,255,255,.12);
+      --text:#e8eefc;
+      --muted: rgba(232,238,252,.70);
+      --accent: rgba(110,168,255,.95);
+      --shadow: 0 10px 26px rgba(0,0,0,.35);
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      background: radial-gradient(900px 600px at 30% 10%, #16224a 0%, var(--bg) 55%, #070a12 100%);
+      color:var(--text);
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial,"Noto Sans","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+      padding: 12px;
+    }
+    .wrap{
+      max-width: 520px;
+      margin: 0 auto;
+    }
+    .card{
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    header{
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:baseline;
+    }
+    h1{ margin:0; font-size:14px; font-weight:800; letter-spacing:.2px; }
+    .sub{ font-size:12px; color: var(--muted); text-align:right; line-height:1.35; }
+
+    .content{
+      padding: 12px 14px 14px;
+      display:grid;
+      gap: 12px;
+    }
+    .fanRow{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      align-items:center;
+    }
+    .fanBox{
+      display:grid;
+      place-items:center;
+      padding: 10px 0 2px;
+    }
+    .fan{
+      width: 210px;
+      height: 210px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background:
+        radial-gradient(circle at 35% 25%, rgba(255,255,255,.16), rgba(255,255,255,0) 40%),
+        radial-gradient(circle at 50% 60%, rgba(0,0,0,.25), rgba(0,0,0,0) 60%),
+        rgba(255,255,255,.04);
+      position: relative;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.18);
+    }
+    .hub{
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform: translate(-50%,-50%);
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(0,0,0,.20);
+      box-shadow: 0 8px 18px rgba(0,0,0,.28);
+      z-index: 3;
+    }
+    .blade{
+      position:absolute;
+      left:50%;
+      top:50%;
+      width: 92px;
+      height: 30px;
+      transform-origin: 0% 50%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(110,168,255,.35), rgba(110,168,255,.05));
+      border: 1px solid rgba(255,255,255,.10);
+      filter: drop-shadow(0 10px 14px rgba(0,0,0,.22));
+    }
+    .blade.b1{ transform: translate(0,-50%) rotate(0deg); }
+    .blade.b2{ transform: translate(0,-50%) rotate(120deg); }
+    .blade.b3{ transform: translate(0,-50%) rotate(240deg); }
+
+    .spin .fanInner{
+      animation: spin var(--speed, 0s) linear infinite;
+    }
+    @keyframes spin{
+      to { transform: rotate(360deg); }
+    }
+    .fanInner{
+      position:absolute;
+      inset: 0;
+      transform-origin: 50% 50%;
+    }
+
+    .controls{
+      display:grid;
+      gap: 10px;
+    }
+    .row{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    button{
+      width:100%;
+      padding: 12px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(18,26,43,.55);
+      color: var(--text);
+      font-weight: 800;
+      cursor: pointer;
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button.primary{
+      border-color: rgba(110,168,255,.42);
+      background: linear-gradient(180deg, rgba(110,168,255,.32), rgba(110,168,255,.12));
+    }
+    button:active{ transform: translateY(1px); }
+
+    .status{
+      display:flex;
+      justify-content:space-between;
+      gap: 10px;
+      align-items:center;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .badge{
+      font-weight:900;
+      color: var(--text);
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      min-width: 72px;
+      text-align:center;
+    }
+    .hint{
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" role="application" aria-label="迷你电风扇">
+      <header>
+        <h1>迷你电风扇</h1>
+        <div class="sub">开关 + 1/2/3 档<br>适配小窗口</div>
+      </header>
+
+      <div class="content">
+        <div class="fanRow">
+          <div class="fanBox">
+            <div class="fan" id="fan">
+              <div class="fanInner" id="fanInner" aria-hidden="true">
+                <div class="blade b1"></div>
+                <div class="blade b2"></div>
+                <div class="blade b3"></div>
+              </div>
+              <div class="hub" aria-hidden="true"></div>
+            </div>
+          </div>
+
+          <div class="controls">
+            <div class="row">
+              <button id="toggle" class="primary" type="button">开 / 关</button>
+              <button id="stop" type="button">停止</button>
+            </div>
+            <div class="row">
+              <button id="s1" type="button">1 档</button>
+              <button id="s2" type="button">2 档</button>
+            </div>
+            <div class="row">
+              <button id="s3" type="button">3 档</button>
+              <button id="reset" type="button">重置</button>
+            </div>
+
+            <div class="status" aria-live="polite">
+              <span>状态</span>
+              <span class="badge" id="badge">关闭</span>
+            </div>
+
+            <div class="hint">提示：开启后可直接点 1/2/3 档切速。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const fan = document.getElementById('fan');
+  const inner = document.getElementById('fanInner');
+  const badge = document.getElementById('badge');
+
+  let on = false;
+  let speed = 0; // 0=stopped
+
+  function apply(){
+    if (!on || speed === 0) {
+      fan.classList.remove('spin');
+      inner.style.animationDuration = '0s';
+      badge.textContent = on ? '已开(停)' : '关闭';
+      return;
+    }
+    fan.classList.add('spin');
+    const dur = speed === 1 ? 1.2 : (speed === 2 ? 0.7 : 0.45);
+    inner.style.animationDuration = dur + 's';
+    badge.textContent = `运行 ${speed}档`;
+  }
+
+  function setSpeed(n){
+    speed = n;
+    if (n > 0) on = true;
+    apply();
+  }
+
+  document.getElementById('toggle').addEventListener('click', () => {
+    on = !on;
+    if (!on) speed = 0;
+    apply();
+  });
+
+  document.getElementById('stop').addEventListener('click', () => {
+    on = true;
+    speed = 0;
+    apply();
+  });
+
+  document.getElementById('s1').addEventListener('click', () => setSpeed(1));
+  document.getElementById('s2').addEventListener('click', () => setSpeed(2));
+  document.getElementById('s3').addEventListener('click', () => setSpeed(3));
+
+  document.getElementById('reset').addEventListener('click', () => {
+    on = false;
+    speed = 0;
+    apply();
+  });
+
+  apply();
+})();
+</script>
+</body>
+</html>

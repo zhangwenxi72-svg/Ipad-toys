@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>我的 iPad 小应用</title>
+  <style>
+    :root{
+      --bg:#0b0f19;
+      --border: rgba(255,255,255,.12);
+      --text:#e8eefc;
+      --muted: rgba(232,238,252,.72);
+      --shadow: 0 10px 26px rgba(0,0,0,.35);
+      --card: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      background: radial-gradient(900px 600px at 30% 10%, #1a2346 0%, var(--bg) 55%, #070a12 100%);
+      color:var(--text);
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial,"Noto Sans","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+      padding: 14px;
+    }
+    .wrap{ max-width: 640px; margin: 0 auto; }
+    .card{
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    header{
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      display:flex;
+      justify-content:space-between;
+      align-items:baseline;
+      gap:12px;
+    }
+    h1{ margin:0; font-size:16px; font-weight: 900; }
+    .sub{ font-size:12px; color: var(--muted); text-align:right; line-height:1.4; }
+
+    .list{ display:grid; }
+    a.item{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:center;
+      padding: 14px 16px;
+      text-decoration:none;
+      color: var(--text);
+      border-top: 1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,0);
+    }
+    a.item:hover{ background: rgba(255,255,255,.06); }
+    .left{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      min-width:0;
+    }
+    .title{
+      font-weight: 900;
+      letter-spacing:.2px;
+      font-size: 14px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .desc{
+      font-size: 12px;
+      color: var(--muted);
+      line-height:1.35;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .tag{
+      font-size:12px;
+      font-weight: 900;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      color: rgba(232,238,252,.88);
+      white-space:nowrap;
+    }
+    footer{
+      padding: 12px 16px 14px;
+      border-top: 1px solid rgba(255,255,255,.10);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    code{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      color: rgba(232,238,252,.9);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <header>
+        <h1>我的 iPad 小应用</h1>
+        <div class="sub">
+          入口页（GitHub Pages）<br>
+          建议用 Safari「添加到主屏幕」
+        </div>
+      </header>
+
+      <div class="list" role="navigation" aria-label="应用列表">
+        <a class="item" href="./fan.html">
+          <div class="left">
+            <div class="title">迷你电风扇</div>
+            <div class="desc">开关 + 1/2/3 档位 + 动画</div>
+          </div>
+          <div class="tag">fan.html</div>
+        </a>
+
+        <a class="item" href="./add_calculator.html">
+          <div class="left">
+            <div class="title">加法计算器</div>
+            <div class="desc">输入 A、B 计算 A+B（Enter 计算）</div>
+          </div>
+          <div class="tag">add_calculator.html</div>
+        </a>
+
+        <a class="item" href="./water_tree.html">
+          <div class="left">
+            <div class="title">浇树小游戏</div>
+            <div class="desc">浇水→树变大、叶子变多</div>
+          </div>
+          <div class="tag">water_tree.html</div>
+        </a>
+
+        <a class="item" href="./glue_ruler.html">
+          <div class="left">
+            <div class="title">粘直尺小游戏</div>
+            <div class="desc">涂胶→按压→直尺合拢动画</div>
+          </div>
+          <div class="tag">glue_ruler.html</div>
+        </a>
+
+        <a class="item" href="./stick_fight.html">
+          <div class="left">
+            <div class="title">火柴人打架</div>
+            <div class="desc">移动 + 出拳/踢腿；对手走动/不动</div>
+          </div>
+          <div class="tag">stick_fight.html</div>
+        </a>
+
+        <a class="item" href="./snake_game.html">
+          <div class="left">
+            <div class="title">贪吃蛇</div>
+            <div class="desc">方向控制 + 吃苹果变长 + 加速/穿墙</div>
+          </div>
+          <div class="tag">snake_game.html</div>
+        </a>
+      </div>
+
+      <footer>
+        上传到 GitHub Pages 时，把 <code>index.html</code> 和这些 <code>*.html</code> 放在仓库根目录（root）。
+        之后访问：<code>https://你的用户名.github.io/仓库名/</code> 就会自动打开这个入口页。
+      </footer>
+    </div>
+  </div>
+</body>
+</html>

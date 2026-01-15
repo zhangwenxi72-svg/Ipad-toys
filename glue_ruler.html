@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>粘直尺小应用</title>
+  <style>
+    :root{
+      --bg:#0b0f19;
+      --border: rgba(255,255,255,.12);
+      --text:#e8eefc;
+      --muted: rgba(232,238,252,.70);
+      --shadow: 0 10px 26px rgba(0,0,0,.35);
+      --accent: rgba(110,168,255,.95);
+      --glue: rgba(255,230,120,.92);
+      --wood1: rgba(235,205,150,.95);
+      --wood2: rgba(205,170,120,.95);
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      background: radial-gradient(900px 600px at 30% 10%, #1a2346 0%, var(--bg) 55%, #070a12 100%);
+      color:var(--text);
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial,"Noto Sans","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+      padding: 12px;
+    }
+    .wrap{ max-width: 560px; margin: 0 auto; }
+    .card{
+      border-radius: 16px;
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    header{
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:baseline;
+    }
+    h1{ margin:0; font-size:14px; font-weight:900; }
+    .sub{ font-size:12px; color:var(--muted); text-align:right; line-height:1.35; }
+    .content{ padding: 12px 14px 14px; display:grid; gap:10px; }
+
+    .scene{
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.16);
+      overflow:hidden;
+      position:relative;
+    }
+    .sceneInner{
+      position:relative;
+      height: 300px;
+      padding: 10px;
+      -webkit-user-select:none;
+      user-select:none;
+      touch-action: none; /* makes drawing smoother */
+    }
+    .hint{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.45;
+    }
+
+    /* Ruler */
+    .rulerArea{
+      position:absolute;
+      left: 10px; right: 10px;
+      top: 52px;
+      height: 150px;
+    }
+    .rulerPiece{
+      position:absolute;
+      top: 28px;
+      height: 88px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.14);
+      background:
+        radial-gradient(circle at 30% 25%, rgba(255,255,255,.18), rgba(255,255,255,0) 40%),
+        linear-gradient(180deg, var(--wood1), var(--wood2));
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.18), 0 14px 26px rgba(0,0,0,.28);
+      overflow:hidden;
+      transform-origin: 50% 50%;
+    }
+    .rulerPiece::after{
+      content:"";
+      position:absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        90deg,
+        rgba(0,0,0,.35) 0px,
+        rgba(0,0,0,.35) 2px,
+        rgba(0,0,0,0) 2px,
+        rgba(0,0,0,0) 10px
+      );
+      opacity:.16;
+      pointer-events:none;
+    }
+    .ticks{
+      position:absolute;
+      left: 10px; right: 10px;
+      top: 10px;
+      height: 56px;
+      display:flex;
+      align-items:flex-end;
+      gap: 6px;
+      pointer-events:none;
+    }
+    .tick{
+      width: 0;
+      border-left: 2px solid rgba(0,0,0,.38);
+      opacity:.85;
+    }
+    .t1{ height: 14px; }
+    .t2{ height: 22px; }
+    .t3{ height: 32px; }
+    .t4{ height: 42px; }
+    .numbers{
+      position:absolute;
+      left: 10px; right: 10px;
+      bottom: 10px;
+      display:flex;
+      justify-content:space-between;
+      font-size: 11px;
+      color: rgba(0,0,0,.55);
+      font-weight: 800;
+      pointer-events:none;
+    }
+
+    /* Break seam */
+    .seam{
+      position:absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 26px;
+      display:grid;
+      place-items:center;
+      pointer-events:none;
+      transition: opacity 420ms ease;
+    }
+    .gap{
+      width: 22px;
+      height: 96px;
+      border-radius: 10px;
+      background: rgba(0,0,0,.30);
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.18);
+      position:relative;
+      overflow:hidden;
+    }
+    .jag{
+      position:absolute;
+      left:-4px; right:-4px;
+      top: 8px;
+      height: 80px;
+      background: linear-gradient(90deg, rgba(0,0,0,.0), rgba(255,255,255,.10), rgba(0,0,0,.0));
+      opacity:.35;
+      transform: rotate(7deg);
+    }
+
+    /* Glue dots */
+    .glueLayer{
+      position:absolute;
+      inset: 0;
+      pointer-events:none;
+    }
+    .dot{
+      position:absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background:
+        radial-gradient(circle at 30% 25%, rgba(255,255,255,.65), rgba(255,255,255,0) 45%),
+        linear-gradient(180deg, rgba(255,240,150,.98), rgba(240,210,90,.85));
+      border: 1px solid rgba(255,255,255,.14);
+      opacity:.95;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,.22));
+    }
+
+    /* Tools */
+    .tools{
+      display:grid;
+      gap:10px;
+    }
+    .btnRow{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    button{
+      padding: 12px 12px;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(18,26,43,.55);
+      color: var(--text);
+      font-weight: 900;
+      cursor:pointer;
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button.primary{
+      border-color: rgba(110,168,255,.42);
+      background: linear-gradient(180deg, rgba(110,168,255,.32), rgba(110,168,255,.12));
+    }
+    button.warn{
+      border-color: rgba(255,230,120,.32);
+      background: linear-gradient(180deg, rgba(255,230,120,.22), rgba(255,230,120,.08));
+      color: #fff4c6;
+    }
+    button:disabled{
+      opacity:.45;
+      cursor:not-allowed;
+    }
+    button:active{ transform: translateY(1px); }
+
+    .meterRow{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      font-size:12px;
+      color: var(--muted);
+      margin-top: 2px;
+      margin-bottom: 6px;
+    }
+    .bar{
+      height: 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      overflow:hidden;
+    }
+    .fill{
+      height:100%;
+      width:0%;
+      background: linear-gradient(90deg, rgba(255,230,120,.72), rgba(110,168,255,.20));
+      transition: width 240ms ease;
+    }
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      font-size: 12px;
+      color: var(--muted);
+      position:absolute;
+      left:10px;
+      top:10px;
+    }
+    .dotInd{
+      width: 10px; height: 10px; border-radius: 999px;
+      background: rgba(255,110,110,.88);
+      box-shadow: 0 0 16px rgba(255,110,110,.25);
+    }
+    .badge.on .dotInd{
+      background: rgba(255,230,120,.95);
+      box-shadow: 0 0 16px rgba(255,230,120,.22);
+    }
+
+    /* Repaired state */
+    .repaired .seam{ opacity: 0; }
+    .toast{
+      position:absolute;
+      left: 50%;
+      bottom: 12px;
+      transform: translateX(-50%);
+      padding: 8px 12px;
+      border-radius: 999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.24);
+      font-size: 12px;
+      color: rgba(232,238,252,.85);
+      opacity:0;
+      transition: opacity 260ms ease;
+      pointer-events:none;
+    }
+    .toast.show{ opacity:1; }
+
+    @media (max-width: 420px){
+      .btnRow{ grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" role="application" aria-label="粘直尺小应用">
+      <header>
+        <h1>粘直尺小应用</h1>
+        <div class="sub">先涂胶水，再按压粘合<br>适配 iPad 小窗口</div>
+      </header>
+
+      <div class="content">
+        <div class="scene" id="scene">
+          <div class="sceneInner" id="sceneInner">
+            <div class="badge" id="badge">
+              <span class="dotInd" aria-hidden="true"></span>
+              <span id="modeText">胶水：关闭</span>
+            </div>
+
+            <div class="rulerArea" id="rulerArea">
+              <div class="rulerPiece" id="leftPiece" style="left:0; width: calc(50% - 13px); transform: rotate(-1.6deg);">
+                <div class="ticks" aria-hidden="true" id="ticksL"></div>
+                <div class="numbers" aria-hidden="true"><span>0</span><span>7</span></div>
+              </div>
+
+              <div class="rulerPiece" id="rightPiece" style="left: calc(50% + 13px); width: calc(50% - 13px); transform: rotate(1.3deg);">
+                <div class="ticks" aria-hidden="true" id="ticksR"></div>
+                <div class="numbers" aria-hidden="true"><span>8</span><span>15</span></div>
+              </div>
+
+              <div class="seam" aria-hidden="true" id="seam">
+                <div class="gap">
+                  <div class="jag"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="glueLayer" id="glueLayer" aria-hidden="true"></div>
+            <div class="toast" id="toast">已粘好 ✅</div>
+          </div>
+        </div>
+
+        <div class="tools">
+          <div class="btnRow">
+            <button id="glueToggle" class="warn" type="button">开启胶水（涂抹）</button>
+            <button id="pressBtn" class="primary" type="button" disabled>按压粘合</button>
+          </div>
+
+          <div>
+            <div class="meterRow"><span>涂胶进度</span><span id="scoreText">0 / 100</span></div>
+            <div class="bar" aria-hidden="true"><div class="fill" id="fill"></div></div>
+          </div>
+
+          <div class="btnRow">
+            <button id="resetBtn" type="button">重置</button>
+            <button id="cleanBtn" type="button">清除胶水</button>
+          </div>
+
+          <div class="hint">用法：点“开启胶水”，在中间裂缝附近涂抹；进度够了点“按压粘合”。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const scene = document.getElementById('scene');
+  const sceneInner = document.getElementById('sceneInner');
+  const rulerArea = document.getElementById('rulerArea');
+  const glueLayer = document.getElementById('glueLayer');
+  const leftPiece = document.getElementById('leftPiece');
+  const rightPiece = document.getElementById('rightPiece');
+  const glueToggle = document.getElementById('glueToggle');
+  const pressBtn = document.getElementById('pressBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const cleanBtn = document.getElementById('cleanBtn');
+  const fill = document.getElementById('fill');
+  const scoreText = document.getElementById('scoreText');
+  const modeText = document.getElementById('modeText');
+  const toast = document.getElementById('toast');
+  const badge = document.getElementById('badge');
+
+  let glueOn = false;
+  let score = 0; // 0..100
+  let repaired = false;
+  let drawing = false;
+
+  function buildTicks(el){
+    for (let i=0;i<18;i++){
+      const t = document.createElement('div');
+      t.className = 'tick ' + (i%6===0 ? 't4' : (i%3===0 ? 't3' : (i%2===0 ? 't2' : 't1')));
+      el.appendChild(t);
+    }
+  }
+  buildTicks(document.getElementById('ticksL'));
+  buildTicks(document.getElementById('ticksR'));
+
+  function clamp(n,a,b){ return Math.max(a, Math.min(b, n)); }
+
+  function showToast(msg){
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 900);
+  }
+
+  function setGlueMode(on){
+    glueOn = on;
+    badge.classList.toggle('on', glueOn);
+    modeText.textContent = glueOn ? '胶水：开启（涂抹中）' : '胶水：关闭';
+    glueToggle.textContent = glueOn ? '关闭胶水' : '开启胶水（涂抹）';
+    glueToggle.classList.toggle('primary', glueOn);
+  }
+
+  function updateProgress(){
+    score = clamp(score, 0, 100);
+    fill.style.width = score + '%';
+    scoreText.textContent = `${Math.round(score)} / 100`;
+    pressBtn.disabled = repaired || score < 70;
+  }
+
+  function seamRect(){
+    const rr = rulerArea.getBoundingClientRect();
+    const seamW = 44;
+    const seamX = rr.left + rr.width/2 - seamW/2;
+    const seamY = rr.top + 28;
+    const seamH = 92;
+    return {x: seamX, y: seamY, w: seamW, h: seamH};
+  }
+
+  function addDot(pageX, pageY){
+    const r = sceneInner.getBoundingClientRect();
+    const x = pageX - r.left;
+    const y = pageY - r.top;
+
+    const d = document.createElement('div');
+    d.className = 'dot';
+    d.style.left = (x - 5) + 'px';
+    d.style.top = (y - 5) + 'px';
+    glueLayer.appendChild(d);
+
+    d.animate([{opacity:0.95},{opacity:0.65},{opacity:0.25}], {duration: 1800, fill:'forwards'});
+  }
+
+  function handlePoint(pageX, pageY){
+    if (!glueOn || repaired) return;
+
+    addDot(pageX, pageY);
+
+    const s = seamRect();
+    const inside = (pageX >= s.x && pageX <= s.x + s.w && pageY >= s.y && pageY <= s.y + s.h);
+    score += inside ? 3.2 : 0.4;
+    updateProgress();
+  }
+
+  function posFromEvent(e){
+    if (e.touches && e.touches[0]) return {x: e.touches[0].clientX, y: e.touches[0].clientY};
+    if (e.changedTouches && e.changedTouches[0]) return {x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY};
+    return {x: e.clientX, y: e.clientY};
+  }
+
+  function down(e){
+    if (!glueOn || repaired) return;
+    drawing = true;
+    const p = posFromEvent(e);
+    handlePoint(p.x, p.y);
+    e.preventDefault?.();
+  }
+  function move(e){
+    if (!drawing) return;
+    const p = posFromEvent(e);
+    handlePoint(p.x, p.y);
+    e.preventDefault?.();
+  }
+  function up(){ drawing = false; }
+
+  sceneInner.addEventListener('pointerdown', down);
+  sceneInner.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', up);
+
+  // fallback touch
+  sceneInner.addEventListener('touchstart', down, {passive:false});
+  sceneInner.addEventListener('touchmove', move, {passive:false});
+  window.addEventListener('touchend', up);
+
+  glueToggle.addEventListener('click', () => {
+    if (repaired) return;
+    setGlueMode(!glueOn);
+  });
+
+  pressBtn.addEventListener('click', () => {
+    if (repaired) return;
+    if (score < 70){
+      showToast('胶水不够，继续涂抹');
+      return;
+    }
+    repaired = true;
+    setGlueMode(false);
+
+    // Straighten
+    leftPiece.style.transform = 'rotate(0deg)';
+    rightPiece.style.transform = 'rotate(0deg)';
+
+    // Close the gap by translating right piece left
+    const gap = 26; // must match seam width
+    rightPiece.animate(
+      [{ transform: 'rotate(0deg) translateX(0px)' }, { transform: `rotate(0deg) translateX(${-gap}px)` }],
+      { duration: 520, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'forwards' }
+    );
+
+    // Small wobble
+    leftPiece.animate([{transform:'rotate(0deg)'},{transform:'rotate(-0.6deg)'},{transform:'rotate(0deg)'}],
+      {duration: 520, easing:'ease-out'});
+
+    scene.classList.add('repaired');
+    pressBtn.disabled = true;
+    showToast('已粘好 ✅');
+  });
+
+  cleanBtn.addEventListener('click', () => {
+    glueLayer.innerHTML = '';
+    score = 0;
+    updateProgress();
+    showToast('已清除胶水');
+  });
+
+  resetBtn.addEventListener('click', () => {
+    glueLayer.innerHTML = '';
+    score = 0;
+    repaired = false;
+    drawing = false;
+    scene.classList.remove('repaired');
+
+    // cancel animations
+    rightPiece.getAnimations().forEach(a => a.cancel());
+    leftPiece.getAnimations().forEach(a => a.cancel());
+
+    leftPiece.style.transform = 'rotate(-1.6deg)';
+    rightPiece.style.transform = 'rotate(1.3deg)';
+
+    pressBtn.disabled = true;
+    setGlueMode(false);
+    updateProgress();
+    showToast('已重置');
+  });
+
+  setGlueMode(false);
+  updateProgress();
+})();
+</script>
+</body>
+</html>

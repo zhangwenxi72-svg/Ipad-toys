@@ -1,0 +1,706 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>火柴人打架小游戏</title>
+  <style>
+    :root{
+      --bg:#0b0f19;
+      --border: rgba(255,255,255,.12);
+      --text:#e8eefc;
+      --muted: rgba(232,238,252,.70);
+      --shadow: 0 10px 26px rgba(0,0,0,.35);
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      background: radial-gradient(900px 600px at 30% 10%, #1a2346 0%, var(--bg) 55%, #070a12 100%);
+      color:var(--text);
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial,"Noto Sans","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+      padding: 12px;
+    }
+    .wrap{ max-width: 600px; margin:0 auto; }
+    .card{
+      border-radius:16px;
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    header{
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:baseline;
+    }
+    h1{ margin:0; font-size:14px; font-weight:900; }
+    .sub{ font-size:12px; color:var(--muted); text-align:right; line-height:1.35; }
+    .content{ padding: 12px 14px 14px; display:grid; gap:10px; }
+
+    .arena{
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.16);
+      overflow:hidden;
+    }
+    canvas{ display:block; width:100%; height:auto; touch-action:none; }
+
+    .hud{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      font-size:12px;
+      color: var(--muted);
+      align-items:center;
+    }
+    .hpbar{
+      flex:1;
+      height: 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      overflow:hidden;
+      max-width: 260px;
+    }
+    .hpfill{
+      height:100%;
+      width:100%;
+      background: linear-gradient(90deg, rgba(110,255,170,.65), rgba(110,168,255,.15));
+      transition: width 120ms linear;
+    }
+    .hpfill.enemy{
+      background: linear-gradient(90deg, rgba(255,120,120,.70), rgba(255,230,120,.15));
+    }
+
+    .controls{
+      display:grid;
+      gap:10px;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap:10px;
+    }
+    button{
+      padding: 12px 10px;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(18,26,43,.55);
+      color: var(--text);
+      font-weight: 900;
+      cursor:pointer;
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    button.primary{
+      border-color: rgba(110,168,255,.42);
+      background: linear-gradient(180deg, rgba(110,168,255,.32), rgba(110,168,255,.12));
+    }
+    button.warn{
+      border-color: rgba(255,230,120,.28);
+      background: linear-gradient(180deg, rgba(255,230,120,.20), rgba(255,230,120,.08));
+      color:#fff4c6;
+    }
+    button.danger{
+      border-color: rgba(255,120,120,.30);
+      background: linear-gradient(180deg, rgba(255,120,120,.22), rgba(255,120,120,.09));
+    }
+    button:active{ transform: translateY(1px); }
+
+    .hint{
+      font-size:12px;
+      color: var(--muted);
+      line-height:1.45;
+    }
+
+    @media (max-width: 460px){
+      .grid{ grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" role="application" aria-label="火柴人打架小游戏">
+      <header>
+        <h1>火柴人打架</h1>
+        <div class="sub">左/右移动 + 出拳/踢腿<br>支持触控与键盘</div>
+      </header>
+
+      <div class="content">
+        <div class="hud">
+          <span>你</span>
+          <div class="hpbar" aria-hidden="true"><div class="hpfill" id="hpP"></div></div>
+          <span style="opacity:.8;">VS</span>
+          <div class="hpbar" aria-hidden="true"><div class="hpfill enemy" id="hpE"></div></div>
+          <span>对手</span>
+        </div>
+
+        <div class="arena">
+          <canvas id="c" width="900" height="420"></canvas>
+        </div>
+
+        <div class="controls">
+          <div class="grid">
+            <button id="leftBtn" type="button">⬅ 左</button>
+            <button id="rightBtn" type="button">右 ➡</button>
+            <button id="punchBtn" class="primary" type="button">👊 出拳</button>
+            <button id="kickBtn" class="warn" type="button">🦵 踢腿</button>
+          </div>
+          <div class="grid">
+            <button id="resetBtn" class="danger" type="button">重置</button>
+            <button id="pauseBtn" type="button">暂停</button>
+            <button id="aiBtn" type="button">对手：走动</button>
+            <button id="helpBtn" type="button">说明</button>
+          </div>
+          <div class="hint" id="hint">
+            键盘：A/D 或 ←/→ 移动；J 出拳；K 踢腿；R 重置；Space 暂停。
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+
+  const hpP = document.getElementById('hpP');
+  const hpE = document.getElementById('hpE');
+
+  const state = {
+    paused: false,
+    aiMove: true,
+    showHelp: false,
+    time: 0,
+  };
+
+  const world = {
+    w: canvas.width,
+    h: canvas.height,
+    groundY: 340,
+    left: 70,
+    right: 830,
+    gravity: 2200,
+  };
+
+  function clamp(n,a,b){ return Math.max(a, Math.min(b, n)); }
+
+  function makeFighter(x, facing){
+    return {
+      x, y: world.groundY,
+      vx: 0, vy: 0,
+      facing, // 1 right, -1 left
+      hp: 100,
+      down: false,
+      downT: 0,
+      stunT: 0,
+      act: 'idle', // idle/walk/punch/kick/down
+      actT: 0,
+      lastHitT: 0,
+    };
+  }
+
+  let P = makeFighter(240, 1);
+  let E = makeFighter(660, -1);
+
+  const input = { left:false, right:false };
+
+  function reset(){
+    P = makeFighter(240, 1);
+    E = makeFighter(660, -1);
+    input.left = input.right = false;
+    state.paused = false;
+    updateHud();
+    flashMsg('已重置');
+  }
+
+  function flashMsg(msg){
+    const el = document.getElementById('hint');
+    el.textContent = msg + '（' + (state.showHelp ? '点“说明”关闭' : '点“说明”查看操作') + '）';
+    setTimeout(() => {
+      if (!state.showHelp) el.textContent = '键盘：A/D 或 ←/→ 移动；J 出拳；K 踢腿；R 重置；Space 暂停。';
+    }, 900);
+  }
+
+  function updateHud(){
+    hpP.style.width = clamp(P.hp,0,100) + '%';
+    hpE.style.width = clamp(E.hp,0,100) + '%';
+  }
+
+  function faceEachOther(){
+    const dx = (E.x - P.x);
+    if (Math.abs(dx) < 1) return;
+    P.facing = dx > 0 ? 1 : -1;
+    E.facing = dx > 0 ? -1 : 1;
+  }
+
+  function startAttack(f, type){
+    if (f.down || f.stunT > 0) return;
+    if (f.act === 'punch' || f.act === 'kick') return;
+    f.act = type;
+    f.actT = 0;
+  }
+
+  function getHitbox(attacker){
+    // A very simple forward hitbox
+    const reach = attacker.act === 'kick' ? 110 : 80;
+    const height = attacker.act === 'kick' ? 55 : 45;
+    const y = world.groundY - (attacker.act === 'kick' ? 75 : 120);
+    const x = attacker.x + attacker.facing * 55;
+    return { x: x + attacker.facing * (reach/2), y, w: reach, h: height };
+  }
+
+  function rectHit(a, b){
+    return !(a.x + a.w/2 < b.x - b.w/2 ||
+             a.x - a.w/2 > b.x + b.w/2 ||
+             a.y + a.h/2 < b.y - b.h/2 ||
+             a.y - a.h/2 > b.y + b.h/2);
+  }
+
+  function fighterBodyRect(f){
+    return { x: f.x, y: world.groundY - 110, w: 55, h: 170 };
+  }
+
+  function applyDamage(victim, attacker){
+    const now = state.time;
+    if (now - attacker.lastHitT < 0.22) return; // prevent multi-hit per swing
+    attacker.lastHitT = now;
+
+    const dmg = attacker.act === 'kick' ? 16 : 10;
+    victim.hp = clamp(victim.hp - dmg, 0, 100);
+    victim.stunT = attacker.act === 'kick' ? 0.45 : 0.28;
+
+    // Knockback
+    victim.vx += attacker.facing * (attacker.act === 'kick' ? 520 : 360);
+    victim.vy -= attacker.act === 'kick' ? 520 : 280;
+
+    if (victim.hp <= 0){
+      victim.down = true;
+      victim.downT = 1.3;
+      victim.act = 'down';
+      victim.actT = 0;
+    }
+    updateHud();
+  }
+
+  function updateFighter(f, dt){
+    if (f.down){
+      f.downT -= dt;
+      f.vx *= 0.90;
+      f.vy += world.gravity * dt;
+      f.y = Math.min(world.groundY, f.y + f.vy*dt);
+      if (f.y >= world.groundY){ f.vy = 0; }
+      f.x = clamp(f.x + f.vx*dt, world.left, world.right);
+      if (f.downT <= 0){
+        // stand up with some hp
+        f.down = false;
+        f.hp = Math.max(40, f.hp); // keep minimum so game continues
+        f.stunT = 0.35;
+        f.act = 'idle';
+        f.actT = 0;
+        updateHud();
+      }
+      return;
+    }
+
+    f.stunT = Math.max(0, f.stunT - dt);
+
+    // action timing
+    if (f.act === 'punch'){
+      f.actT += dt;
+      // active window 0.10~0.22
+      if (f.actT > 0.30){ f.act = 'idle'; f.actT = 0; }
+    } else if (f.act === 'kick'){
+      f.actT += dt;
+      // active window 0.12~0.26
+      if (f.actT > 0.38){ f.act = 'idle'; f.actT = 0; }
+    } else {
+      f.actT = 0;
+    }
+
+    // physics
+    f.vy += world.gravity * dt;
+    f.y = Math.min(world.groundY, f.y + f.vy*dt);
+    if (f.y >= world.groundY){ f.vy = 0; }
+
+    // friction
+    f.vx *= (f.y >= world.groundY ? 0.86 : 0.98);
+
+    f.x = clamp(f.x + f.vx*dt, world.left, world.right);
+  }
+
+  function playerControl(dt){
+    if (P.down) return;
+    if (P.stunT > 0) return;
+    if (P.act === 'punch' || P.act === 'kick') return;
+
+    let ax = 0;
+    if (input.left) ax -= 1;
+    if (input.right) ax += 1;
+
+    if (ax !== 0){
+      P.facing = ax > 0 ? 1 : -1;
+      P.vx += ax * 1500 * dt;
+      P.act = 'walk';
+    } else {
+      if (P.act === 'walk') P.act = 'idle';
+    }
+  }
+
+  function enemyAI(dt){
+    if (!state.aiMove) return;
+    if (E.down) return;
+    if (E.stunT > 0) return;
+    if (E.act === 'punch' || E.act === 'kick') return;
+
+    const dx = P.x - E.x;
+    const dist = Math.abs(dx);
+
+    // wander bias: approach if far, back off if too close
+    let dir = 0;
+    if (dist > 170) dir = Math.sign(dx);
+    else if (dist < 95) dir = -Math.sign(dx);
+    else dir = 0;
+
+    // add small random wandering
+    const r = Math.sin(state.time * 1.7 + 2.0) + Math.sin(state.time * 0.9);
+    if (Math.abs(r) > 1.4 && dist > 120) dir = Math.sign(dx);
+
+    if (dir !== 0){
+      E.facing = dir > 0 ? 1 : -1;
+      E.vx += dir * 1200 * dt;
+      E.act = 'walk';
+    } else {
+      if (E.act === 'walk') E.act = 'idle';
+    }
+
+    // attack if in range
+    if (dist < 120 && Math.random() < 0.015){
+      startAttack(E, Math.random() < 0.55 ? 'punch' : 'kick');
+    }
+  }
+
+  function resolveHits(){
+    // Player hit enemy
+    if ((P.act === 'punch' && P.actT > 0.10 && P.actT < 0.22) ||
+        (P.act === 'kick'  && P.actT > 0.12 && P.actT < 0.26)){
+      const hb = getHitbox(P);
+      if (!E.down && rectHit(hb, fighterBodyRect(E))){
+        applyDamage(E, P);
+      }
+    }
+
+    // Enemy hit player
+    if ((E.act === 'punch' && E.actT > 0.10 && E.actT < 0.22) ||
+        (E.act === 'kick'  && E.actT > 0.12 && E.actT < 0.26)){
+      const hb = getHitbox(E);
+      if (!P.down && rectHit(hb, fighterBodyRect(P))){
+        applyDamage(P, E);
+      }
+    }
+  }
+
+  function drawGround(){
+    // background gradient
+    const g = ctx.createLinearGradient(0, 0, 0, world.h);
+    g.addColorStop(0, 'rgba(255,255,255,0.03)');
+    g.addColorStop(1, 'rgba(0,0,0,0.32)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,world.w,world.h);
+
+    // floor
+    ctx.fillStyle = 'rgba(10, 18, 30, 0.55)';
+    ctx.fillRect(0, world.groundY, world.w, world.h - world.groundY);
+
+    // a subtle line
+    ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, world.groundY + 1);
+    ctx.lineTo(world.w, world.groundY + 1);
+    ctx.stroke();
+  }
+
+  function drawStickman(f, color){
+    const baseX = f.x;
+    const baseY = world.groundY;
+
+    const down = f.down;
+    const stun = f.stunT > 0;
+    const a = f.act;
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 7;
+
+    // shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    const shW = down ? 120 : 95;
+    ctx.beginPath();
+    ctx.ellipse(baseX, baseY + 10, shW/2, 14, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // pose parameters
+    let headY = baseY - 190;
+    let torsoTopY = baseY - 165;
+    let torsoBotY = baseY - 105;
+    let shoulderY = baseY - 155;
+    let hipY = baseY - 105;
+
+    if (down){
+      // lying
+      ctx.translate(0, 0);
+      const y = baseY - 35;
+      ctx.globalAlpha = 0.95;
+      // body line
+      ctx.beginPath();
+      ctx.moveTo(baseX - 70, y);
+      ctx.lineTo(baseX + 50, y);
+      ctx.stroke();
+      // head
+      ctx.beginPath();
+      ctx.arc(baseX - 86, y, 18, 0, Math.PI*2);
+      ctx.stroke();
+      // arms/legs
+      ctx.beginPath();
+      ctx.moveTo(baseX - 40, y);
+      ctx.lineTo(baseX - 10, y - 22);
+      ctx.moveTo(baseX - 40, y);
+      ctx.lineTo(baseX - 8, y + 18);
+      ctx.moveTo(baseX + 10, y);
+      ctx.lineTo(baseX + 46, y - 20);
+      ctx.moveTo(baseX + 10, y);
+      ctx.lineTo(baseX + 48, y + 16);
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+
+    // slight bounce when walking
+    const walkBob = (a === 'walk') ? Math.sin(state.time * 10) * 6 : 0;
+    headY += walkBob;
+    torsoTopY += walkBob;
+    torsoBotY += walkBob;
+    shoulderY += walkBob;
+    hipY += walkBob;
+
+    // torso
+    ctx.beginPath();
+    ctx.moveTo(baseX, torsoTopY);
+    ctx.lineTo(baseX, torsoBotY);
+    ctx.stroke();
+
+    // head
+    ctx.beginPath();
+    ctx.arc(baseX, headY, 18, 0, Math.PI*2);
+    ctx.stroke();
+
+    // arms pose
+    const dir = f.facing;
+    let armFwd = 28, armUp = -12;
+    let armBack = -18, armBackUp = 10;
+
+    if (a === 'punch'){
+      const t = Math.min(1, f.actT / 0.18);
+      armFwd = 70 * t;
+      armUp = -8;
+      armBack = -16;
+      armBackUp = 14;
+    } else if (a === 'kick'){
+      armFwd = 25;
+      armUp = -18;
+      armBack = -18;
+      armBackUp = 12;
+    } else if (stun){
+      armFwd = 12;
+      armUp = 10;
+      armBack = -8;
+      armBackUp = 18;
+    }
+
+    // right/left shoulders
+    const sX = baseX;
+    const sY = shoulderY;
+
+    ctx.beginPath();
+    // front arm
+    ctx.moveTo(sX, sY);
+    ctx.lineTo(sX + dir * (35 + armFwd), sY + armUp);
+    // back arm
+    ctx.moveTo(sX, sY);
+    ctx.lineTo(sX - dir * (30 + Math.abs(armBack)), sY + armBackUp);
+    ctx.stroke();
+
+    // legs pose
+    const lX = baseX;
+    const lY = hipY;
+    let frontLegX = 22, frontLegY = 70;
+    let backLegX = -22, backLegY = 70;
+
+    if (a === 'walk'){
+      const s = Math.sin(state.time * 10);
+      frontLegX = 28 + 10*s;
+      backLegX = -28 - 10*s;
+      frontLegY = 78 - 8*s;
+      backLegY = 78 + 8*s;
+    } else if (a === 'kick'){
+      // kick leg extended
+      const t = Math.min(1, f.actT / 0.20);
+      frontLegX = 85 * t;
+      frontLegY = 25;
+      backLegX = -18;
+      backLegY = 82;
+    } else if (stun){
+      frontLegX = 16;
+      backLegX = -12;
+    }
+
+    ctx.beginPath();
+    // front leg
+    ctx.moveTo(lX, lY);
+    ctx.lineTo(lX + dir*frontLegX, lY + frontLegY);
+    // back leg
+    ctx.moveTo(lX, lY);
+    ctx.lineTo(lX + dir*backLegX, lY + backLegY);
+    ctx.stroke();
+
+    // small weapon/hitbox hint during active frames
+    if ((a === 'punch' && f.actT > 0.10 && f.actT < 0.22) || (a === 'kick' && f.actT > 0.12 && f.actT < 0.26)){
+      const hb = getHitbox(f);
+      ctx.save();
+      ctx.globalAlpha = 0.12;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(hb.x - hb.w/2, hb.y - hb.h/2, hb.w, hb.h);
+      ctx.restore();
+    }
+
+    ctx.restore();
+  }
+
+  function draw(){
+    drawGround();
+
+    // bounds markers
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(world.left, world.groundY);
+    ctx.lineTo(world.left, world.groundY - 140);
+    ctx.moveTo(world.right, world.groundY);
+    ctx.lineTo(world.right, world.groundY - 140);
+    ctx.stroke();
+    ctx.restore();
+
+    // fighters
+    drawStickman(E, 'rgba(255,200,200,0.95)');
+    drawStickman(P, 'rgba(200,235,255,0.95)');
+
+    // status text
+    ctx.save();
+    ctx.fillStyle = 'rgba(232,238,252,0.82)';
+    ctx.font = '700 16px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+    let msg = '';
+    if (state.paused) msg = '暂停中';
+    else if (P.hp <= 0) msg = '你倒下了（会自动起身）';
+    else if (E.hp <= 0) msg = '对手倒下了（会自动起身）';
+    if (msg){
+      ctx.fillText(msg, 18, 28);
+    }
+    ctx.restore();
+  }
+
+  // Input: buttons
+  function bindHold(btn, onDown, onUp){
+    btn.addEventListener('pointerdown', (e) => { onDown(); btn.setPointerCapture?.(e.pointerId); e.preventDefault(); });
+    btn.addEventListener('pointerup',   (e) => { onUp(); e.preventDefault(); });
+    btn.addEventListener('pointercancel', () => onUp());
+    // fallback touch
+    btn.addEventListener('touchstart', (e) => { onDown(); e.preventDefault(); }, {passive:false});
+    btn.addEventListener('touchend',   (e) => { onUp(); e.preventDefault(); }, {passive:false});
+  }
+
+  bindHold(document.getElementById('leftBtn'),  () => input.left = true,  () => input.left = false);
+  bindHold(document.getElementById('rightBtn'), () => input.right = true, () => input.right = false);
+
+  document.getElementById('punchBtn').addEventListener('click', () => startAttack(P, 'punch'));
+  document.getElementById('kickBtn').addEventListener('click',  () => startAttack(P, 'kick'));
+
+  document.getElementById('resetBtn').addEventListener('click', reset);
+  document.getElementById('pauseBtn').addEventListener('click', () => {
+    state.paused = !state.paused;
+    document.getElementById('pauseBtn').textContent = state.paused ? '继续' : '暂停';
+  });
+  document.getElementById('aiBtn').addEventListener('click', () => {
+    state.aiMove = !state.aiMove;
+    document.getElementById('aiBtn').textContent = state.aiMove ? '对手：走动' : '对手：不动';
+  });
+  document.getElementById('helpBtn').addEventListener('click', () => {
+    state.showHelp = !state.showHelp;
+    const el = document.getElementById('hint');
+    if (state.showHelp){
+      el.textContent = '操作：⬅/➡ 或 A/D 移动；J 出拳；K 踢腿；R 重置；Space 暂停。目标：把对手打倒。';
+    } else {
+      el.textContent = '键盘：A/D 或 ←/→ 移动；J 出拳；K 踢腿；R 重置；Space 暂停。';
+    }
+  });
+
+  // keyboard
+  window.addEventListener('keydown', (e) => {
+    const k = e.key.toLowerCase();
+    if (k === 'a' || e.key === 'ArrowLeft') input.left = true;
+    if (k === 'd' || e.key === 'ArrowRight') input.right = true;
+    if (k === 'j') startAttack(P, 'punch');
+    if (k === 'k') startAttack(P, 'kick');
+    if (k === 'r') reset();
+    if (e.key === ' ') {
+      state.paused = !state.paused;
+      document.getElementById('pauseBtn').textContent = state.paused ? '继续' : '暂停';
+      e.preventDefault();
+    }
+  });
+  window.addEventListener('keyup', (e) => {
+    const k = e.key.toLowerCase();
+    if (k === 'a' || e.key === 'ArrowLeft') input.left = false;
+    if (k === 'd' || e.key === 'ArrowRight') input.right = false;
+  });
+
+  // Game loop
+  let last = performance.now();
+  function tick(now){
+    const dt = Math.min(0.033, (now - last) / 1000);
+    last = now;
+
+    if (!state.paused){
+      state.time += dt;
+
+      faceEachOther();
+
+      playerControl(dt);
+      enemyAI(dt);
+
+      updateFighter(P, dt);
+      updateFighter(E, dt);
+
+      resolveHits();
+
+      // if someone is down with hp 0, keep them down state already; nothing extra
+    }
+
+    draw();
+    requestAnimationFrame(tick);
+  }
+
+  updateHud();
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
